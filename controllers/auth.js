@@ -8,10 +8,10 @@ const {authSchema}  = require("../utils/joi-validator")
 exports.register = async (req, res, next) => {
 
   //Validating request body using joi
-  const {error ,value} = await authSchema.validateAsync(req.body)
-  if(error){
+  const {err ,value} = await authSchema.validateAsync(req.body)
+  if(err){
    error.statusCode = 422;
-   error.message = error.details.message;
+   error.message = err.details.message;
     throw error;
   }
  
