@@ -13,7 +13,7 @@ exports.addRestaurant = async (req, res, next) => {
   const {err ,value} = await restaurantSchema.validateAsync(req.body)
   if(err){
     error.statusCode = 422;
-    error.message = error.details.message;
+    error.message = err.details.message;
      throw error;
   }
  
@@ -66,7 +66,7 @@ exports.addFoodItem = async (req, res, next) => {
   const {err ,value} = await productSchema.validateAsync(req.body)
   if(err){
     error.statusCode = 422;
-    error.message = error.details.message;
+    error.message = err.details.message;
      throw error;
   }
 
