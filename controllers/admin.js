@@ -1,28 +1,36 @@
-const { validationResult } = require("express-validator");
 const mongoose = require("mongoose");
 
 const User = require("../models/user");
 const Restaurant = require("../models/restaurant");
 const FoodItem = require("../models/foodItem");
 
+const {  restaurantSchema, productSchema } = require("../utils/joi-validator")
+
 
 exports.addRestaurant = async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const error = new Error("Validation failed, entered data is incorrect.");
+  
+  //checking for validation error
+  const {err ,value} = await restaurantSchema.validateAsync(req.body)
+  if(err){
     error.statusCode = 422;
-    throw error;
+    error.message = error.details.message;
+     throw error;
   }
-
+ 
   const { title, description } = req.body;
-
-  const findRestaurant = await Restaurant.findOne({ title: title });
-  if (findRestaurant) {
-    res.status(200).json({
+  
+  //Checking if restaurant already added
+  const isRestaurantAvailable = await Restaurant.findOne({ title: title });
+  
+  if (isRestaurantAvailable) {
+    res.status(409).json({
       message: "Restaurant already available!",
       creator: { _id: req.userId },
     });
+  
   } else {
+    
+    //Creating and adding a restaurant
     const restaurant = new Restaurant({
       title: title,
       description: description,
@@ -30,6 +38,7 @@ exports.addRestaurant = async (req, res, next) => {
     });
 
     try {
+
       await restaurant.save();
 
       const user = await User.findById(req.userId);
@@ -39,45 +48,52 @@ exports.addRestaurant = async (req, res, next) => {
         restaurant: restaurant,
         creator: { _id: user._id, name: user.name },
       });
+    
     } catch (err) {
+      
       if (!err.statusCode) {
         err.statusCode = 500;
       }
       next(err);
     }
   }
+
 };
 
 exports.addFoodItem = async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const error = new Error("Validation failed, entered data is incorrect.");
+
+  //checking for validation error
+  const {err ,value} = await productSchema.validateAsync(req.body)
+  if(err){
     error.statusCode = 422;
-    throw error;
+    error.message = error.details.message;
+     throw error;
   }
 
-  let restaurantId = mongoose.Types.ObjectId(req.params.id);
+  const restaurantId = mongoose.Types.ObjectId(req.body.restaurantId);
   const { title, description, price } = req.body;
 
-  const allItems = await Restaurant.findOne({ _id: restaurantId }).populate(
-    "items"
-  );
-
-  const ans = allItems.items.map((item) => {
-    console.log(item.title)
+  //Populating the specific restaurant menu
+  const allItems = await Restaurant.findOne({ _id: restaurantId }).populate("items");
+  
+ //Mapping through each menu item 
+  const menu = allItems.items.map((item) => {
     return item.title;
   });
 
- const check = ans.includes(title)
+// Checking for availability of the menu item 
+ const isItemAvailable = menu.includes(title)
 
-  if (check) {
-    res.status(200).json({
+  if (isItemAvailable) {
+    res.status(409).json({
       message: "Food Item already available in this restaurant!",
       creator: { _id: req.userId },
     });
   }
   
   else {
+    
+    //Creating and adding a fooditem
     const foodItem = new FoodItem({
       title: title,
       description: description,
@@ -87,12 +103,13 @@ exports.addFoodItem = async (req, res, next) => {
     });
 
     try {
+
       await foodItem.save();
 
-     
+      //Finding the restaurant 
       const restaurant = await Restaurant.findById(restaurantId);
 
-     
+     //Adding the food item to that specific restaurant
       restaurant.items.push(foodItem);
       await restaurant.save();
 
@@ -101,11 +118,14 @@ exports.addFoodItem = async (req, res, next) => {
         foodItem: foodItem,
         creator: { _id: req.userId },
       });
+    
     } catch (err) {
+      
       if (!err.statusCode) {
         err.statusCode = 500;
       }
       next(err);
+      
     }
   }
 };

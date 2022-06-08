@@ -1,17 +1,36 @@
-const Joi = require('joi');
+const Joi = require("joi");
 
-const schema = Joi.object({
-    name: Joi.string()
-        .alphanum()
-        .min(3)
-        .max(30)
-        .required(),
+const authSchema = Joi.object({
+  name: Joi.string().min(3).max(30).required(),
 
-    password: Joi.string()
-        .pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')),
+  password: Joi.string().min(3).max(15).required(),
 
-    email: Joi.string()
-        .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
+  email: Joi.string().email({
+    minDomainSegments: 2,
+    tlds: { allow: ["com", "net"] },
+  }),
+
+  role: Joi.string()
+});
+
+const restaurantSchema = Joi.object({
+  title: Joi.string().min(5).required(),
+
+  description: Joi.string().min(5).required()
 })
 
-exports.module = schema;
+const productSchema = Joi.object({
+  title: Joi.string().min(5).required(),
+
+  description: Joi.string().min(5).required(),
+
+  price: Joi.number().required(),
+
+  restaurantId : Joi.string().alphanum().required()
+})
+
+module.exports = { 
+  authSchema,
+  restaurantSchema,
+  productSchema
+ };

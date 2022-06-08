@@ -1,22 +1,35 @@
 const bcrypt = require("bcryptjs");
-const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/user");
 
+const {authSchema}  = require("../utils/joi-validator")
+
 exports.register = async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const error = new Error("Validation failed, entered data is incorrect.");
-    error.statusCode = 422;
-    error.data = errors.array();
+
+  //Validating request body using joi
+  const {error ,value} = await authSchema.validateAsync(req.body)
+  if(error){
+   error.statusCode = 422;
+   error.message = error.details.message;
     throw error;
   }
  
-  const {email , name , password , role} = req.body;
-  
   try {
+  const {email , name , password , role} = req.body;
+
+  //checking if email already exists
+  const isEmailExists = await User.findOne({email:email})
+  if(isEmailExists){
+    const error =  new Error("E-mail already exists");
+    error.statusCode = 409;
+    throw error;
+  }
+  
+    //Encrypting the password 
     const hashedPw = await bcrypt.hash(password, 12);
+    
+    //creating the user
     const user = new User({
       email: email,
       password: hashedPw,
@@ -26,18 +39,23 @@ exports.register = async (req, res, next) => {
 
     const result = await user.save();
     res.status(201).json({ message: "User created!", userId: result._id });
+  
   } catch (err) {
+    
     if (!err.statusCode) {
       err.statusCode = 500;
     }
     next(err);
+  
   }
 };
 
 exports.login = async (req, res, next) => {
+  
   const {email, password} = req.body;
   
   try {
+    //Finding user using email in db
     const user = await User.findOne({ email: email });
 
     if (!user) {
@@ -45,7 +63,8 @@ exports.login = async (req, res, next) => {
       error.statusCode = 401;
       throw error;
     }
-
+    
+    //Checking for password equality
     const isEqual = await bcrypt.compare(password, user.password);
 
     if (!isEqual) {
@@ -53,7 +72,8 @@ exports.login = async (req, res, next) => {
       error.statusCode = 401;
       throw error;
     }
-
+    
+    //Creating a jwt token
     const token = jwt.sign(
       {
         email: user.email,
@@ -62,11 +82,15 @@ exports.login = async (req, res, next) => {
       "TGjyXRNCHFzMHmrjjDfCoqOqV",
       { expiresIn: "3h" }
     );
+    
     res.status(200).json({ token: token, userId: user._id.toString() });
+  
   } catch (err) {
+   
     if (!err.statusCode) {
       err.statusCode = 500;
     }
     next(err);
   }
+
 };

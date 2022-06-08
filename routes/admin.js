@@ -7,28 +7,10 @@ const isAdmin = require("../middleware/is-admin");
 
 const router = express.Router();
 
-// POST /api/add/restaurant
-router.post(
-  "/add/restaurant",
-  isAuth,
-  isAdmin,
-  [
-    body("title").trim().isLength({ min: 5 }),
-    body("description").trim().isLength({ min: 5 }),
-  ],
-  adminController.addRestaurant
-);
+// POST /api/add/restaurant   
+router.post("/add/restaurant", isAuth, isAdmin, adminController.addRestaurant);
 
-//POST /api/add/:id/foodItem
-router.post(
-  "/add/:id/foodItem",
-  isAuth,
-  isAdmin,
-  [
-    body("title").trim().isLength({ min: 5 }),
-    body("description").trim().isLength({ min: 5 }),
-  ],
-  adminController.addFoodItem
-)
+//POST /api/add/foodItem
+router.post("/add/foodItem", isAuth, isAdmin, adminController.addFoodItem);
 
 module.exports = router;

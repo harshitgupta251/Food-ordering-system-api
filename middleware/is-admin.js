@@ -1,10 +1,12 @@
 const User = require("../models/user");
 
 module.exports = async (req, res, next) => {
+
   // Check if the requesting user is marked as admin in database
   const user = await User.findById(req.userId)
  
-  let role = user.role  // check in database
+  let role = user.role  
+
   if (role == "Admin") {
     next();
   } else {
@@ -12,4 +14,5 @@ module.exports = async (req, res, next) => {
     error.statusCode = 401;
     throw error;
   }
+  
 };

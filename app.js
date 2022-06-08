@@ -12,17 +12,19 @@ const authRoutes = require("./routes/auth");
 
 const app = express();
 
+//Creating a path for storing log streams
 const accessLogStream = fs.createWriteStream(
   path.join(__dirname, "access.log"),
   { flags: "a" }
 );
 
+//Using morgan for storing logs in root folder
 app.use(morgan("combined", { stream: accessLogStream }));
 
 app.use(express.json());
 
+ //Handling CORS error
 app.use((req, res, next) => {
-  //Handling CORS error
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Methods",
@@ -36,13 +38,14 @@ app.use("/api", adminRoutes);
 app.use("/api", shopRoutes);
 app.use("/api", authRoutes);
 
-app.use((error, req, res, next) => {
   // Error handling
+app.use((error, req, res, next) => {
   console.log(error);
+
   const status = error.statusCode || 500;
   const message = error.message;
   const data = error.data;
-  return res.status(status).json({ message: message, data: data });
+ res.status(status).json({ message: message, data: data });
 });
 
 const PORT = process.env.PORT;
